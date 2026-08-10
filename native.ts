@@ -4,22 +4,46 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { RendererSettings } from "@main/settings";
 import { IpcMainInvokeEvent, systemPreferences } from "electron";
 
-export function getColor() {
-    const color = systemPreferences.getAccentColor().toLowerCase();
-    return `#${color.slice(0, 6)}`;
+import { getCosmicAccentColor, initCosmicListener } from "./cosmic";
+
+function settings() {
+    return RendererSettings.store.plugins?.AccentTheme as {
+        enabled: boolean;
+        updateAutomatically: boolean;
+        enableCosmicSupport: boolean;
+    } | undefined;
 }
 
-export function initAccentThemeListener(event: IpcMainInvokeEvent) {
+export async function getColor() {
+    const color = systemPreferences.getAccentColor().toLowerCase();
+    if (!color && settings()?.enableCosmicSupport) return await getCosmicAccentColor();
 
-    let lastChange: string | undefined;
-    systemPreferences.on("accent-color-changed", () => {
-        // electron fires the event multiple times, which is why we have to dedupe it
-        const color = getColor();
-        if (lastChange === color) return;
+    return color ? `#${color.slice(color.indexOf("#") + 1, 6)}` : "";
+}
 
-        event.sender.executeJavaScript(`Vencord.Plugins.plugins.AccentTheme.updateColor(${JSON.stringify(color)}, true)`);
-        lastChange = color;
-    });
+let controller: AbortController | undefined;
+export function initListener(event: IpcMainInvokeEvent) {
+    controller?.abort();
+    controller = new AbortController();
+
+    let dedupedColor: string | undefined;
+    async function listener() {
+        const color = await getColor();
+        if (!color || !settings()?.updateAutomatically) return;
+
+        if (dedupedColor !== color)
+            event.sender.executeJavaScript(`Vencord.Plugins.plugins.AccentTheme.updateColor(${JSON.stringify(color)})`);
+        dedupedColor = color;
+    }
+
+    systemPreferences.on("accent-color-changed", listener);
+    controller.signal.addEventListener("abort", () => systemPreferences.off("accent-color-changed", listener));
+
+    initCosmicListener(() => settings()?.enableCosmicSupport && listener(), controller.signal);
+}
+export function stopListener() {
+    controller?.abort();
 }

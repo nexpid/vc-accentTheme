@@ -8,7 +8,7 @@ import { definePluginSettings } from "@api/Settings";
 import { Button } from "@components/Button";
 import definePlugin, { OptionType, PluginNative } from "@utils/types";
 import { findByCodeLazy, findByPropsLazy } from "@webpack";
-import { showToast, UserSettingsProtoStore } from "@webpack/common";
+import { showToast, Toasts, UserSettingsProtoStore } from "@webpack/common";
 
 const Native = VencordNative.pluginHelpers.AccentTheme as PluginNative<typeof import("./native")>;
 
@@ -16,8 +16,8 @@ const updateTheme = findByCodeLazy('type:"SELECTIVELY_SYNCED_USER_SETTINGS_UPDAT
 const chroma = findByPropsLazy("Color");
 
 const darkenThreshold = 0.2;
-function updateColor(color: string, live?: boolean) {
-    if (live && !settings.store.updateAutomatically) return;
+function updateColor(color: string) {
+    if (!color) return;
 
     const { appearance } = UserSettingsProtoStore.settings;
     const themeSettings = appearance.clientThemeSettings?.customUserThemeSettings;
@@ -39,21 +39,31 @@ function updateColor(color: string, live?: boolean) {
 }
 
 const settings = definePluginSettings({
-    updateAutomatically: {
-        type: OptionType.BOOLEAN,
-        description: "Automatically updates your theme when your accent color changes",
-        default: true,
-    },
     updateOnStartup: {
         type: OptionType.BOOLEAN,
         description: "Updates your theme upon restart",
         default: false,
     },
+    updateAutomatically: {
+        type: OptionType.BOOLEAN,
+        description: "Automatically updates your theme when your accent color changes",
+        default: true,
+    },
+    enableCosmicSupport: {
+        type: OptionType.BOOLEAN,
+        description: "Enables custom support for the Cosmic Desktop (only enable if you use Cosmic and the plugin doesn't work)",
+        default: false,
+    },
     update: {
         type: OptionType.COMPONENT,
         component: () => <Button onClick={async () => {
-            updateColor(await Native.getColor());
-            showToast("Updated theme!");
+            const color = await Native.getColor();
+            if (color) {
+                updateColor(color);
+                showToast("Updated theme!", Toasts.Type.SUCCESS);
+            } else {
+                showToast("Couldn't find accent color!", Toasts.Type.FAILURE);
+            }
         }}>
             Update theme
         </Button>,
@@ -69,9 +79,13 @@ export default definePlugin({
         id: 853550207039832084n
     }],
     settings,
-    updateColor,
+
     async start() {
-        Native.initAccentThemeListener();
+        await Native.initListener();
         if (settings.store.updateOnStartup) this.updateColor(await Native.getColor());
-    }
+    },
+    stop() {
+        Native.stopListener();
+    },
+    updateColor
 });
