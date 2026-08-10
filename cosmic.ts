@@ -29,7 +29,7 @@ function parseKey(app: string, key: string, version = "v1") {
 async function getDarkThemePreference() {
     try {
         return Boolean(await readFile(parseKey(ConfigApps.ThemeDark, "is_dark"), "utf8"));
-    } catch (error) {
+    } catch {
         return true;
     }
 }
@@ -43,7 +43,7 @@ export async function getCosmicAccentColor() {
         const base = accent.match(/base: "(#[a-f0-9]+)"/i)?.[1];
 
         return base ? base.slice(0, 7).toLowerCase() : "";
-    } catch (error) {
+    } catch {
         return "";
     }
 }

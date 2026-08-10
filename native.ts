@@ -21,7 +21,8 @@ export async function getColor() {
     const color = systemPreferences.getAccentColor().toLowerCase();
     if (!color && settings()?.enableCosmicSupport) return await getCosmicAccentColor();
 
-    return color ? `#${color.slice(color.indexOf("#") + 1, 6)}` : "";
+    const hex = color.replace("#", "").slice(0, 6);
+    return hex ? `#${hex}` : "";
 }
 
 let controller: AbortController | undefined;
