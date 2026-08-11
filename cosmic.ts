@@ -6,7 +6,7 @@
 
 // polyfill for the Cosmic desktop environment — https://system76.com/cosmic
 
-import { watch } from "fs";
+import { existsSync, watch } from "fs";
 import { readFile } from "fs/promises";
 import { homedir } from "os";
 import { join } from "path";
@@ -54,6 +54,7 @@ export function initCosmicListener(callback: () => void, signal: AbortSignal) {
         parseKey(ConfigApps.ThemeDark, "accent", "v2"),
         parseKey(ConfigApps.ThemeLight, "accent", "v2")
     ]) {
+        if (!existsSync(key)) continue;
         // "On Linux and macOS systems, fs.watch() resolves the path to an inode and
         //  watches the inode. If the watched path is deleted and recreated, it is
         //  assigned a new inode. [...] Events for the new inode will not be emitted.

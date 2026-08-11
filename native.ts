@@ -19,9 +19,9 @@ function settings() {
 
 export async function getColor() {
     const color = systemPreferences.getAccentColor().toLowerCase();
-    if (!color && settings()?.enableCosmicSupport) return await getCosmicAccentColor();
-
     const hex = color.replace("#", "").slice(0, 6);
+
+    if (!hex && settings()?.enableCosmicSupport) return await getCosmicAccentColor();
     return hex ? `#${hex}` : "";
 }
 
