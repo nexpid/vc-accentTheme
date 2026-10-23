@@ -8,7 +8,7 @@ import { definePluginSettings } from "@api/Settings";
 import { Button } from "@components/Button";
 import definePlugin, { OptionType, PluginNative } from "@utils/types";
 import { findByCodeLazy, findByPropsLazy } from "@webpack";
-import { showToast, Toasts, UserSettingsProtoStore } from "@webpack/common";
+import { showToast, UserSettingsProtoStore } from "@webpack/common";
 
 const Native = VencordNative.pluginHelpers.AccentTheme as PluginNative<typeof import("./native")>;
 
@@ -60,9 +60,9 @@ const settings = definePluginSettings({
             const color = await Native.getColor();
             if (color) {
                 updateColor(color);
-                showToast("Updated theme!", Toasts.Type.SUCCESS);
+                showToast({ text: "Updated theme!", variant: "success" });
             } else {
-                showToast("Couldn't find accent color!", Toasts.Type.FAILURE);
+                showToast({ text: "Couldn't find accent color!", variant: "success" });
             }
         }}>
             Update theme
