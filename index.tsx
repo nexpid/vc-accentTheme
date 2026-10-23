@@ -53,6 +53,7 @@ const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         description: "Enables custom support for the Cosmic Desktop (only enable if you use Cosmic and the plugin doesn't work)",
         default: false,
+        restartNeeded: true,
     },
     update: {
         type: OptionType.COMPONENT,
@@ -80,9 +81,13 @@ export default definePlugin({
     }],
     settings,
 
-    async start() {
-        await Native.initListener();
-        if (settings.store.updateOnStartup) this.updateColor(await Native.getColor());
+    flux: {
+        async CONNECTION_OPEN() {
+            if (settings.store.updateOnStartup) updateColor(await Native.getColor());
+        }
+    },
+    start() {
+        Native.initListener();
     },
     stop() {
         Native.stopListener();

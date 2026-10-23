@@ -9,19 +9,19 @@ import { IpcMainInvokeEvent, systemPreferences } from "electron";
 
 import { getCosmicAccentColor, initCosmicListener } from "./cosmic";
 
-function settings() {
-    return RendererSettings.store.plugins?.AccentTheme as {
-        enabled: boolean;
-        updateAutomatically: boolean;
-        enableCosmicSupport: boolean;
-    } | undefined;
+function settings(): {
+    enabled?: boolean;
+    updateAutomatically?: boolean;
+    enableCosmicSupport?: boolean;
+} {
+    return RendererSettings.store.plugins?.AccentTheme ?? {};
 }
 
 export async function getColor() {
     const color = systemPreferences.getAccentColor().toLowerCase();
     const hex = color.replace("#", "").slice(0, 6);
 
-    if (!hex && settings()?.enableCosmicSupport) return await getCosmicAccentColor();
+    if (!hex && settings().enableCosmicSupport) return await getCosmicAccentColor();
     return hex ? `#${hex}` : "";
 }
 
@@ -33,7 +33,7 @@ export function initListener(event: IpcMainInvokeEvent) {
     let dedupedColor: string | undefined;
     async function listener() {
         const color = await getColor();
-        if (!color || !settings()?.updateAutomatically) return;
+        if (!color || !settings().updateAutomatically) return;
 
         if (dedupedColor !== color)
             event.sender.executeJavaScript(`Vencord.Plugins.plugins.AccentTheme.updateColor(${JSON.stringify(color)})`);
@@ -43,7 +43,8 @@ export function initListener(event: IpcMainInvokeEvent) {
     systemPreferences.on("accent-color-changed", listener);
     controller.signal.addEventListener("abort", () => systemPreferences.off("accent-color-changed", listener));
 
-    initCosmicListener(() => settings()?.enableCosmicSupport && listener(), controller.signal);
+    if (settings().enableCosmicSupport)
+        initCosmicListener(listener, controller.signal);
 }
 export function stopListener() {
     controller?.abort();
